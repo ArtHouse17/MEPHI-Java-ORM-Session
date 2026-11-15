@@ -57,6 +57,7 @@ curl http://localhost:8080/api/courses
 - `/assignments/{id}/submissions` — преподаватель получает список работ через `GET`, студент сдаёт решение через `POST`. Пример тела `{"content":"Текст решения"}`.
 - `/assignments/{id}/submissions/{submissionId}` — `GET` для преподавателя курса или автора решения.
 - `/assignments/{id}/submissions/{submissionId}/grade` — преподаватель выставляет оценку через `PUT`. Пример тела `{"score":95,"feedback":"Разберите запросы"}`.
+- `/users/{studentId}/submissions` — `GET` для списка своих работ от новых к старым. Передай тот же ID в `X-Actor-Id`. Пока работа не проверена, `score` равен `null`.
 - `/quizzes?moduleId=` — тесты (`title`). `GET /quizzes/{id}` возвращает вопросы и варианты без ключа.
 - `/questions?quizId=` — вопросы (`text`, `points`, `position`). `/answer-options?questionId=` — варианты (`text`, `correct`, `position`). Тест, вопросы и варианты редактирует преподаватель курса.
 - `/quizzes/{id}/attempts` — `GET` для списка попыток у преподавателя, `POST` для сдачи теста студентом. Пример тела `{"answers":[{"questionId":1,"optionId":1}]}`.

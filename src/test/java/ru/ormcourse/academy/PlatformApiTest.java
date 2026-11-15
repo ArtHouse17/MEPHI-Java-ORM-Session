@@ -1,6 +1,7 @@
 package ru.ormcourse.academy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -230,6 +231,47 @@ class PlatformApiTest {
         mvc.perform(get(resource).header(ACTOR, studentId)).andExpect(jsonPath("$.feedback").value("Good"));
         mvc.perform(delete(coursePath())).andExpect(status().isConflict());
         mvc.perform(get(LESSONS + "/" + lessonId)).andExpect(status().isOk());
+    }
+
+    @Test
+    void listsOnlyOwnSubmissionsWithGradesAfterWithdrawal() throws Exception {
+        enroll();
+        long otherStudentId = createUser("STUDENT");
+        mvc.perform(json(post(coursePath() + "/enrollments"), Map.of("studentId", otherStudentId)))
+                .andExpect(status().isCreated());
+        Instant dueAt = Instant.now().plus(1, ChronoUnit.DAYS);
+        long firstAssignmentId = createAssignment(dueAt);
+        long secondAssignmentId = createAssignment(dueAt);
+        String first = ASSIGNMENTS + "/" + firstAssignmentId + "/submissions";
+        String second = ASSIGNMENTS + "/" + secondAssignmentId + "/submissions";
+        long graded = create(first, Map.of("content", "First solution"), studentId);
+        long ungraded = create(second, Map.of("content", "Second solution"), studentId);
+        create(first, Map.of("content", "Another student's solution"), otherStudentId);
+        mvc.perform(json(put(first + "/" + graded + "/grade").header(ACTOR, teacherId),
+                        Map.of("score", 92, "feedback", "Good work"))).andExpect(status().isOk());
+        mvc.perform(delete(coursePath() + "/enrollments/" + studentId)).andExpect(status().isNoContent());
+
+        mvc.perform(get(USERS + "/" + studentId + "/submissions").header(ACTOR, studentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(ungraded))
+                .andExpect(jsonPath("$[0].assignmentId").value(secondAssignmentId))
+                .andExpect(jsonPath("$[0].score").value(nullValue()))
+                .andExpect(jsonPath("$[1].id").value(graded))
+                .andExpect(jsonPath("$[1].score").value(92))
+                .andExpect(jsonPath("$[1].feedback").value("Good work"));
+    }
+
+    @Test
+    void restrictsTheSubmissionListToItsStudent() throws Exception {
+        String path = USERS + "/" + studentId + "/submissions";
+        long otherStudentId = createUser("STUDENT");
+        mvc.perform(get(path)).andExpect(status().isBadRequest());
+        mvc.perform(get(path).header(ACTOR, otherStudentId)).andExpect(status().isForbidden());
+        mvc.perform(get(USERS + "/" + teacherId + "/submissions").header(ACTOR, teacherId))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get(path).header(ACTOR, studentId)).andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test

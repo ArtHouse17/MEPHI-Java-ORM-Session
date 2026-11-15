@@ -10,6 +10,7 @@ import ru.ormcourse.academy.dto.AssignmentDtos.SubmissionInput;
 import ru.ormcourse.academy.dto.AssignmentDtos.SubmissionView;
 import ru.ormcourse.academy.entity.Assignment;
 import ru.ormcourse.academy.entity.Enrollment;
+import ru.ormcourse.academy.entity.Role;
 import ru.ormcourse.academy.entity.Submission;
 import ru.ormcourse.academy.exception.ApiException;
 import ru.ormcourse.academy.repository.SubmissionRepository;
@@ -19,14 +20,17 @@ import ru.ormcourse.academy.repository.SubmissionRepository;
 public class SubmissionService {
     private final AssignmentService assignments;
     private final SubmissionRepository submissions;
+    private final AccountService accounts;
     private final CourseService courses;
     private final CourseActivityService activity;
     private final Clock clock;
 
     public SubmissionService(AssignmentService assignments, SubmissionRepository submissions,
-                             CourseService courses, CourseActivityService activity, Clock clock) {
+                             AccountService accounts, CourseService courses, CourseActivityService activity,
+                             Clock clock) {
         this.assignments = assignments;
         this.submissions = submissions;
+        this.accounts = accounts;
         this.courses = courses;
         this.activity = activity;
         this.clock = clock;
@@ -50,6 +54,15 @@ public class SubmissionService {
     public List<SubmissionView> list(long id, long actorId) {
         courses.requireTeacher(assignments.courseOf(assignments.requireAssignment(id)), actorId);
         return submissions.findByAssignmentIdOrderByIdAsc(id).stream().map(SubmissionView::from).toList();
+    }
+
+    public List<SubmissionView> listForStudent(long studentId, long actorId) {
+        if (studentId != actorId) {
+            throw ApiException.forbidden("Students can only view their own submissions");
+        }
+        accounts.requireRole(studentId, Role.STUDENT);
+        return submissions.findByStudentIdOrderBySubmittedAtDescIdDesc(studentId).stream()
+                .map(SubmissionView::from).toList();
     }
 
     public SubmissionView submission(long id, long submissionId, long actorId) {
