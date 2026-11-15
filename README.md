@@ -12,13 +12,15 @@ Java 21, Maven, Spring Boot, Spring Data JPA, Hibernate, PostgreSQL 16 и Liquib
 docker compose up --build -d
 ```
 
-После запуска открой [список курсов](http://localhost:8080/api/courses). Посмотреть логи можно через `docker compose logs -f app`. Команда `docker compose down` остановит контейнеры, данные останутся в томе PostgreSQL.
+Посмотреть логи можно через `docker compose logs -f app`. Команда `docker compose down` остановит контейнеры, данные останутся в томе PostgreSQL.
 
 При запуске через Docker демоданные загружаются автоматически.
 
 ## Как проверить API
 
-API можно проверить через `curl` или Postman. В [demo.http](demo.http) есть готовые запросы для IntelliJ IDEA.
+```sh
+curl http://localhost:8080/api/courses
+```
 
 Для запросов от имени студента или преподавателя укажи его ID в заголовке `X-Actor-Id`.
 
