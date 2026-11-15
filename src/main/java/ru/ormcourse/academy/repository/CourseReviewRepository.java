@@ -1,0 +1,13 @@
+package ru.ormcourse.academy.repository;
+
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import ru.ormcourse.academy.entity.CourseReview;
+
+public interface CourseReviewRepository extends JpaRepository<CourseReview, Long> {
+    List<CourseReview> findByCourseIdOrderByIdAsc(long courseId);
+
+    Optional<CourseReview> findByCourseIdAndStudentId(long courseId, long studentId);
+
+}
