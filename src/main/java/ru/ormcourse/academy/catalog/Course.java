@@ -12,6 +12,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -103,7 +104,7 @@ public class Course extends IdentifiedEntity {
         this.durationWeeks = durationWeeks;
     }
 
-    public void replaceTags(Set<Tag> newTags) {
+    public void replaceTags(Collection<Tag> newTags) {
         tags.clear();
         tags.addAll(newTags);
     }

@@ -2,7 +2,6 @@ package ru.ormcourse.academy.common;
 
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -45,7 +44,7 @@ public class ApiErrors {
         if (primary instanceof SQLException sql && sql.getSQLState() != null) {
             String detail = switch (sql.getSQLState()) {
                 case "23503", "23506" -> "The operation conflicts with a related record";
-                case "23505" -> duplicateDetail(sql.getMessage());
+                case "23505" -> "A record with the same unique values already exists";
                 default -> "The operation conflicts with a database constraint";
             };
             return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
@@ -54,14 +53,4 @@ public class ApiErrors {
                 "The operation conflicts with a database constraint");
     }
 
-    private String duplicateDetail(String message) {
-        String normalized = message.toLowerCase(Locale.ROOT);
-        if (normalized.contains("uq_enrollment")) {
-            return "The student is already enrolled in this course";
-        }
-        if (normalized.contains("uq_quiz_submission") || normalized.contains("uq_submission")) {
-            return "The student already submitted an attempt";
-        }
-        return "A record with the same unique values already exists";
-    }
 }

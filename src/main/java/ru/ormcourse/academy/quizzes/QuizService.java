@@ -171,7 +171,7 @@ public class QuizService {
 
     private AnswerOption requireEditableOption(long id, long teacherId) {
         AnswerOption option = requireOption(id);
-        requireEditableQuestion(option.getQuestion().getId(), teacherId);
+        requireEditableQuiz(option.getQuestion().getQuiz().getId(), teacherId);
         return option;
     }
 }

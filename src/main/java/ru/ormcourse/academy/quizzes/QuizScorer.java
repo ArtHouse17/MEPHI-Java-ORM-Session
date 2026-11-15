@@ -1,7 +1,6 @@
 package ru.ormcourse.academy.quizzes;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,29 +10,29 @@ final class QuizScorer {
     }
 
     static Grade grade(List<QuestionKey> questions, List<Selection> selections) {
-        Map<Long, Selection> byQuestion = new HashMap<>();
+        Map<Long, Long> optionByQuestion = new HashMap<>();
         for (Selection selection : selections) {
-            if (byQuestion.putIfAbsent(selection.questionId(), selection) != null) {
+            if (optionByQuestion.putIfAbsent(selection.questionId(), selection.optionId()) != null) {
                 throw new IllegalArgumentException("A question appears more than once in the submitted answers");
             }
         }
-        if (byQuestion.size() != questions.size()) {
+        if (optionByQuestion.size() != questions.size()) {
             throw new IllegalArgumentException("Submit exactly one answer for every question");
         }
 
-        Map<Long, Integer> pointsByQuestion = new LinkedHashMap<>();
+        Map<Long, Integer> pointsByQuestion = new HashMap<>();
         int score = 0;
         int maxScore = 0;
         for (QuestionKey question : questions) {
-            Selection selection = byQuestion.get(question.questionId());
-            if (selection == null) {
+            Long optionId = optionByQuestion.get(question.questionId());
+            if (optionId == null) {
                 throw new IllegalArgumentException("The answers do not match the questions in this quiz");
             }
-            if (!question.optionIds().contains(selection.optionId())) {
-                throw new IllegalArgumentException("Option #" + selection.optionId()
+            if (!question.optionIds().contains(optionId)) {
+                throw new IllegalArgumentException("Option #" + optionId
                         + " does not belong to question #" + question.questionId());
             }
-            int points = selection.optionId() == question.correctOptionId() ? question.points() : 0;
+            int points = optionId == question.correctOptionId() ? question.points() : 0;
             score += points;
             maxScore += question.points();
             pointsByQuestion.put(question.questionId(), points);

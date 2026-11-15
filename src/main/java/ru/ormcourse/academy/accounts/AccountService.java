@@ -57,16 +57,16 @@ public class AccountService {
         return ProfileView.from(account);
     }
 
-    public UserAccount requireAccount(long id) {
-        return ApiException.require(accounts.findById(id), "User", id);
-    }
-
     public UserAccount requireRole(long id, Role role) {
         UserAccount account = requireAccount(id);
         if (account.getRole() != role) {
             throw ApiException.invalid("User #" + id + " must have role " + role);
         }
         return account;
+    }
+
+    private UserAccount requireAccount(long id) {
+        return ApiException.require(accounts.findById(id), "User", id);
     }
 
     private UserAccount requireWithProfile(long id) {

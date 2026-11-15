@@ -1,6 +1,7 @@
 package ru.ormcourse.academy.quizzes;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ import ru.ormcourse.academy.quizzes.QuizDtos.AnswerView;
 import ru.ormcourse.academy.quizzes.QuizDtos.AttemptInput;
 import ru.ormcourse.academy.quizzes.QuizDtos.AttemptSummary;
 import ru.ormcourse.academy.quizzes.QuizDtos.AttemptView;
+import ru.ormcourse.academy.quizzes.QuizDtos.PickInput;
 import ru.ormcourse.academy.quizzes.QuizScorer.Grade;
 import ru.ormcourse.academy.quizzes.QuizScorer.QuestionKey;
 import ru.ormcourse.academy.quizzes.QuizScorer.Selection;
@@ -54,31 +56,38 @@ public class QuizAttemptService {
             throw ApiException.conflict("The student already submitted this quiz");
         }
 
+        List<AnswerOption> quizOptions = options.findByQuestionQuizIdOrderByPositionAscIdAsc(quizId);
+        List<QuestionKey> key = buildKey(quizId, quizOptions);
+        Grade grade = grade(key, input.answers());
+        QuizSubmission attempt = attempts.save(new QuizSubmission(quiz, enrollment.getStudent(), clock.instant(),
+                grade.score(), grade.maxScore()));
+        List<QuizAnswer> selected = saveAnswers(attempt, input.answers(), quizOptions, grade);
+        return view(attempt, selected);
+    }
+
+    private List<QuestionKey> buildKey(long quizId, List<AnswerOption> quizOptions) {
         List<Question> quizQuestions = questions.findByQuizIdOrderByPositionAscIdAsc(quizId);
         if (quizQuestions.isEmpty()) {
             throw ApiException.conflict("The quiz is not ready: it has no questions");
         }
-        List<AnswerOption> quizOptions = options.findByQuestionQuizIdOrderByPositionAscIdAsc(quizId);
         Map<Long, List<AnswerOption>> optionsByQuestion = quizOptions.stream()
                 .collect(Collectors.groupingBy(option -> option.getQuestion().getId()));
-        List<QuestionKey> key = quizQuestions.stream()
+        return quizQuestions.stream()
                 .map(question -> answerKey(question, optionsByQuestion.getOrDefault(question.getId(), List.of())))
                 .toList();
+    }
 
-        List<Selection> selections = input.answers().stream()
-                .map(pick -> new Selection(pick.questionId(), pick.optionId())).toList();
-        Grade grade = calculateGrade(key, selections);
-        QuizSubmission attempt = attempts.save(new QuizSubmission(quiz, enrollment.getStudent(), clock.instant(),
-                grade.score(), grade.maxScore()));
-
-        Map<Long, AnswerOption> byId = quizOptions.stream()
+    private List<QuizAnswer> saveAnswers(QuizSubmission attempt, List<PickInput> picks,
+                                        List<AnswerOption> quizOptions, Grade grade) {
+        Map<Long, AnswerOption> optionsById = quizOptions.stream()
                 .collect(Collectors.toMap(AnswerOption::getId, Function.identity()));
-        List<QuizAnswer> selected = selections.stream().map(selection -> {
-            AnswerOption option = byId.get(selection.optionId());
-            return new QuizAnswer(attempt, option.getQuestion(), option,
-                    grade.pointsByQuestion().get(selection.questionId()));
-        }).toList();
-        return view(attempt, answers.saveAll(selected));
+        List<QuizAnswer> selected = new ArrayList<>();
+        for (PickInput pick : picks) {
+            AnswerOption option = optionsById.get(pick.optionId());
+            int points = grade.pointsByQuestion().get(pick.questionId());
+            selected.add(new QuizAnswer(attempt, option.getQuestion(), option, points));
+        }
+        return answers.saveAll(selected);
     }
 
     public List<AttemptSummary> list(long quizId, long teacherId) {
@@ -117,7 +126,9 @@ public class QuizAttemptService {
         return new QuestionKey(question.getId(), question.getPoints(), optionIds, correct.getFirst().getId());
     }
 
-    private Grade calculateGrade(List<QuestionKey> key, List<Selection> selections) {
+    private Grade grade(List<QuestionKey> key, List<PickInput> picks) {
+        List<Selection> selections = picks.stream()
+                .map(pick -> new Selection(pick.questionId(), pick.optionId())).toList();
         try {
             return QuizScorer.grade(key, selections);
         } catch (IllegalArgumentException exception) {

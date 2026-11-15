@@ -1,11 +1,8 @@
 package ru.ormcourse.academy.catalog;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
-
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,8 +50,7 @@ public class CourseService {
 
     @Transactional
     public CourseView create(CourseInput input) {
-        Category category = ApiException.require(categories.findById(input.categoryId()),
-                "Category", input.categoryId());
+        Category category = requireCategory(input.categoryId());
         UserAccount teacher = accounts.requireRole(input.teacherId(), Role.TEACHER);
         Course course = new Course(input.title(), input.description(), category, teacher,
                 input.startDate(), input.durationWeeks());
@@ -64,8 +60,7 @@ public class CourseService {
     @Transactional
     public CourseView update(long id, CourseInput input) {
         Course course = requireCourse(id);
-        Category category = ApiException.require(categories.findById(input.categoryId()),
-                "Category", input.categoryId());
+        Category category = requireCategory(input.categoryId());
         UserAccount teacher = accounts.requireRole(input.teacherId(), Role.TEACHER);
         course.update(input.title(), input.description(), category, teacher, input.startDate(), input.durationWeeks());
         return CourseView.from(course);
@@ -78,12 +73,16 @@ public class CourseService {
 
     public Curriculum curriculum(long id) {
         Course course = ApiException.require(courses.findCurriculumById(id), "Course", id);
-        Map<Long, List<LessonView>> byModule = lessons.findByModuleCourseIdOrderByPositionAscIdAsc(id).stream()
-                .collect(groupingBy(lesson -> lesson.getModule().getId(), mapping(LessonView::from, toList())));
-        List<ModuleContent> modules = course.getModules().stream()
-                .map(module -> new ModuleContent(ModuleView.from(module),
-                        byModule.getOrDefault(module.getId(), List.of())))
-                .toList();
+        Map<Long, List<LessonView>> lessonsByModule = new HashMap<>();
+        for (Lesson lesson : lessons.findByModuleCourseIdOrderByPositionAscIdAsc(id)) {
+            long moduleId = lesson.getModule().getId();
+            lessonsByModule.computeIfAbsent(moduleId, key -> new ArrayList<>()).add(LessonView.from(lesson));
+        }
+        List<ModuleContent> modules = new ArrayList<>();
+        for (CourseModule module : course.getModules()) {
+            List<LessonView> moduleLessons = lessonsByModule.getOrDefault(module.getId(), List.of());
+            modules.add(new ModuleContent(ModuleView.from(module), moduleLessons));
+        }
         return new Curriculum(CourseView.from(course), modules);
     }
 
@@ -94,7 +93,7 @@ public class CourseService {
     @Transactional
     public List<TagView> replaceTags(long courseId, Set<Long> tagIds) {
         Course course = courseWithTags(courseId);
-        Set<Tag> found = new HashSet<>(tags.findAllById(tagIds));
+        List<Tag> found = tags.findAllById(tagIds);
         if (found.size() != tagIds.size()) {
             throw ApiException.invalid("One or more tag IDs do not exist");
         }
@@ -114,6 +113,10 @@ public class CourseService {
 
     private Course courseWithTags(long id) {
         return ApiException.require(courses.findWithTagsById(id), "Course", id);
+    }
+
+    private Category requireCategory(long id) {
+        return ApiException.require(categories.findById(id), "Category", id);
     }
 
     private List<TagView> tagViews(Course course) {
