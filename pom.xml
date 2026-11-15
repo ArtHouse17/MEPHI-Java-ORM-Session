@@ -10,7 +10,7 @@
         <relativePath/>
     </parent>
     <groupId>ru.ormcourse</groupId>
-    <artifactId>hibernate-academy</artifactId>
+    <artifactId>mephi</artifactId>
     <version>1.0.0</version>
     <name>MEPHI</name>
     <properties>

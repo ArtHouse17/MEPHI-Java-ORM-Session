@@ -6,7 +6,7 @@ RUN mvn -B -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /build/target/hibernate-academy-1.0.0.jar app.jar
+COPY --from=build /build/target/mephi-*.jar app.jar
 USER 10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
