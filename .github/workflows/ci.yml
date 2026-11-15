@@ -1,0 +1,50 @@
+name: Build and test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: academy_test
+          POSTGRES_USER: academy
+          POSTGRES_PASSWORD: ci-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U academy -d academy_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: git diff --check "$(git hash-object -t tree /dev/null)" HEAD
+      - run: mvn -B -Pquality verify
+      - run: mvn -B test
+        env:
+          ACADEMY_TEST_DB_URL: jdbc:postgresql://localhost:5432/academy_test
+          ACADEMY_TEST_DB_USER: academy
+          ACADEMY_TEST_DB_PASSWORD: ci-test-password
+      - name: Check application and demo data in Compose
+        shell: bash
+        run: |
+          docker compose up --build -d
+          curl --retry 30 --retry-all-errors --retry-delay 2 --fail --silent --show-error \
+            http://localhost:8080/api/courses | jq -e 'any(.[]; .title == "ORM и Hibernate")'
+        env:
+          DB_PASSWORD: ci-compose-password
+      - name: Show Compose logs on failure
+        if: failure()
+        run: docker compose logs
+        env:
+          DB_PASSWORD: ci-compose-password
