@@ -1,6 +1,6 @@
 # MEPHI
 
-Учебный REST API для курса «ORM и Hibernate». Преподаватель составляет программу и расписание, добавляет задания и тесты. Студент записывается на курс, сдаёт работы и смотрит результаты.
+Учебный REST API для курса [«ORM-фреймворки для Java»](https://apps.skillfactory.ru/learning/course/course-v1:skillfactory+MIFIDEV-3sem+2026/block-v1:skillfactory+MIFIDEV-3sem+2026+type@sequential+block@0de0b668b6db41de85183e0d07f75c04). Преподаватель составляет программу и расписание, добавляет задания и тесты. Студент записывается на курс, сдаёт работы и смотрит результаты.
 
 Java 21, Maven, Spring Boot, Spring Data JPA, Hibernate, PostgreSQL 16 и Liquibase.
 
