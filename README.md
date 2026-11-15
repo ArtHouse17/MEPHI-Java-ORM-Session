@@ -14,8 +14,6 @@ docker compose up --build -d
 
 После запуска открой [список курсов](http://localhost:8080/api/courses). Посмотреть логи можно через `docker compose logs -f app`. Команда `docker compose down` остановит контейнеры, данные останутся в томе PostgreSQL.
 
-Для запуска без Docker нужны JDK 21, Maven и PostgreSQL. Создай базу и задай `DB_URL` (например, `jdbc:postgresql://localhost:5432/academy`), `DB_USER` и `DB_PASSWORD`. Затем выполни `mvn spring-boot:run`. Liquibase создаст таблицы, а Hibernate проверит маппинг.
-
 Для демонстрационных данных задай `SPRING_PROFILES_ACTIVE=dev`. В Docker Compose этот профиль уже включён.
 
 ## Как проверить API
