@@ -17,6 +17,8 @@ class DemoDataTest {
     @Test
     void installsDemoDataForTheWholeLearningScenario() {
         assertThat(count("app_user")).isGreaterThanOrEqualTo(3);
+        assertThat(jdbc.queryForList("select title from course", String.class))
+                .contains("ORM-фреймворки для Java");
         assertThat(count("course_tag")).isGreaterThanOrEqualTo(2);
         assertThat(count("lesson_resource")).isPositive();
         assertThat(count("lesson_session")).isPositive();

@@ -40,7 +40,7 @@ jobs:
         run: |
           docker compose up --build -d
           curl --retry 30 --retry-all-errors --retry-delay 2 --fail --silent --show-error \
-            http://localhost:8080/api/courses | jq -e 'any(.[]; .title == "ORM и Hibernate")'
+            http://localhost:8080/api/courses | jq -e 'any(.[]; .title == "ORM-фреймворки для Java")'
         env:
           DB_PASSWORD: ci-compose-password
       - name: Show Compose logs on failure
