@@ -12,7 +12,7 @@
     <groupId>ru.ormcourse</groupId>
     <artifactId>hibernate-academy</artifactId>
     <version>1.0.0</version>
-    <name>Hibernate Academy</name>
+    <name>MEPHI</name>
     <properties>
         <java.version>21</java.version>
         <postgresql.version>42.7.10</postgresql.version>
